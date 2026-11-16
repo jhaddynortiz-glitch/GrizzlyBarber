@@ -1,0 +1,39 @@
+schema: spec-driven
+
+context: |
+  Project: Grizzly barber (Plataforma web para barbería con reservas, catálogo y administración).
+  Language: es
+  Database: Firebase Cloud Firestore
+  Hosting: Firebase Hosting
+  Frontend: React + Vite + TypeScript + Tailwind CSS
+  All artifacts must be written in Spanish (es).
+  Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+  All tasks originate from the project's Trello board.
+  Components and modules MUST be introduced via OpenSpec changes. Direct un-spec'd creation is prohibited.
+
+rules:
+  proposal:
+    - Keep proposals focused on business value for Grizzly Barber.
+    - Always link or reference the corresponding Trello card.
+    - Clearly define scope and what is explicitly out of scope.
+  specs:
+    - Write requirements using uppercase SHALL or MUST.
+    - Include data models and validation constraints for Firestore collections.
+  design:
+    - Detail Firestore collections and schema affected.
+    - Detail React components, Zustand stores, and Tailwind styling approach.
+    - Maintain mobile-first responsive guidelines.
+  tasks:
+    - Break implementation down into small, verifiable checklist items (- [ ]).
+    - Group tasks by layer (Types/Firestore services, State/Hooks, Components/UI).
+
+operations:
+  apply:
+    guidance:
+      - Implement tasks strictly in order.
+      - Update task checkboxes immediately upon completion.
+      - Keep code clean, typed with TypeScript and compliant with firestore.rules.
+  archive:
+    guidance:
+      - Summarize changes and new capabilities added to Grizzly Barber.
+      - Remind developer to move the Trello card to Done.
