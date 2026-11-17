@@ -30,23 +30,25 @@ Las tareas a realizarse en este proyecto provienen de un tablero organizado en *
 
 ### Estructura de Columnas del Tablero Trello
 
-El tablero oficial de Trello para "Grizzly barber" se organiza en las siguientes 4 listas:
+El tablero oficial de Trello para "Grizzly barber" se organiza en las siguientes 5 listas:
 
 ```
-[ 📋 Tareas pendientes ] ──> [ 🧪 QA ] ──> [ ✅ hecho(Done) ]
+[ 📋 Tareas pendientes ] ──> [ 🚀 En curso (In Progress) ] ──> [ 🧪 QA ] ──> [ ✅ hecho(Done) ]
            │
            └──> [ 🗑️ Descartado ]
 ```
 
 1. **📋 Tareas pendientes:**
    - Contiene los requerimientos priorizados y listos para ser trabajados.
-   - Aquí se toma una tarjeta y se ejecuta `/opsx-propose <nombre-tarea>` para generar la especificación, diseño y tareas, seguido de `/opsx-apply` para su desarrollo.
-2. **🧪 QA:**
+   - Aquí se toma una tarjeta y se ejecuta `/opsx-propose <nombre-tarea>` para generar la propuesta, especificación delta, diseño y desglose de tareas.
+2. **🚀 En curso (In Progress):**
+   - Tarjetas con propuesta y diseño aprobados cuya implementación de código está activamente en desarrollo mediante `/opsx-apply <nombre-tarea>`.
+3. **🧪 QA:**
    - Tarjetas cuya implementación de código está finalizada y se encuentran en fase de prueba y verificación.
    - En esta columna se ejecuta `/opsx-verify <nombre-tarea>` para validar el cumplimiento de todos los requisitos frente a la especificación.
-3. **✅ hecho(Done):**
+4. **✅ hecho(Done):**
    - Tareas verificadas con éxito en QA, consolidadas en las especificaciones maestras mediante `/opsx-archive` y desplegadas en producción.
-4. **🗑️ Descartado:**
+5. **🗑️ Descartado:**
    - Ideas, experimentos o requerimientos que fueron desestimados o cancelados.
 
 ### Formato Requerido de Tarjetas en Trello
