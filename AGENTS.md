@@ -60,12 +60,55 @@ Cada tarjeta de Trello debe contar con:
 
 ---
 
+## 2.1 Fuentes de Verdad
+
+Antes de proponer o implementar cualquier cambio, el agente MUST leer, en este orden:
+
+| Documento | Qué define |
+| :--- | :--- |
+| `docs/producto.md` | Alcance, roles, pantallas, flujos, reglas de negocio, modelo de datos y **registro de decisiones**. Si algo no está aquí, no se implementa. |
+| `openspec/specs/<capacidad>/spec.md` | Requisitos `SHALL/MUST` vigentes por capacidad: `auth`, `catalogo`, `reservas`, `pagos`, `citas-cliente`, `perfil-cliente`, `agenda-barbero`, `perfil-barbero`, `fidelizacion`, `platform-architecture`. |
+| `docs/componentes.md` | Inventario de componentes y tokens. Reutilizar antes de crear. |
+| Figma (frame enlazado en la tarjeta) | Diseño visual de la pantalla. |
+
+- Si hay contradicción entre documentos, **manda `docs/producto.md`**: se detiene el trabajo y se pregunta al responsable.
+- Las preguntas abiertas de `docs/producto.md` §11 **no se resuelven por cuenta propia**: se pregunta.
+- Toda decisión nueva del responsable se agrega al registro de decisiones de `docs/producto.md`.
+
+## 2.2 Reglas para Trabajar con Figma
+
+- Archivo: `https://www.figma.com/design/2zNbwG3mqxkur2bwkZwHyx/Grizzlybarber`. Solo valen las secciones aprobadas **CLIENTE**, **BARBERO** y **PERFIL**; el resto son sugerencias.
+- Antes de implementar una pantalla, leer el frame enlazado en la tarjeta de Trello (conector de Figma).
+- Usar **solo tokens** de `tailwind.config.js`; nunca colores en hexadecimal sueltos en los componentes.
+- Los textos de ejemplo de Figma (nombres, precios, fechas) **no se copian**: los datos vienen de Firestore.
+- Si el diseño contradice `docs/producto.md` (ver §9 de ese documento), manda el documento de producto.
+
+## 2.3 Definition of Ready / Definition of Done
+
+**Una tarjeta pasa a "🚀 En curso" solo si (Ready):**
+- Referencia la capacidad (spec) que modifica.
+- Tiene criterios de aceptación.
+- Si incluye UI: tiene el link al frame de Figma aprobado.
+- No depende de una pregunta abierta sin resolver.
+
+**Una tarjeta pasa a "✅ hecho" solo si (Done):**
+- `npm run build` (y `lint`/`test` cuando existan) pasan sin errores.
+- `/opsx-verify` cumple todos los `SHALL/MUST`.
+- La UI se comparó contra el frame de Figma.
+- `/opsx-archive` fusionó la delta en `openspec/specs/`.
+- Una tarjeta = un cambio OpenSpec = una rama/PR (`feat/<nombre-cambio>`).
+
+---
+
 ## 3. Arquitectura y Stack Tecnológico de Grizzly Barber
 
 ### Tecnologías Principales
 
 | Capa | Tecnología | Justificación y Reglas |
 | :--- | :--- | :--- |
+| **Autenticación** | **Firebase Auth** | Email/contraseña + Google. Roles como custom claim asignados por script (Admin SDK). |
+| **Backend** | **Cloud Functions (plan Blaze)** | Órdenes y webhooks de pago, expiración de citas, sellos de fidelización y cálculos sensibles. |
+| **Pagos** | **Libélula** (vía `PaymentProvider`) | Aún sin cuenta: se usa `MockPaymentProvider` fuera de producción. |
 | **Base de Datos** | **Firebase Cloud Firestore** | NoSQL en tiempo real, latencia ultrabaja, escalabilidad automática y plan gratuito generoso. |
 | **Alojamiento (Hosting)** | **Firebase Hosting** | CDN global ultrarrápido con SSL automático, soporte nativo para SPA (`rewrites` a `index.html`). |
 | **Frontend Web** | **React 18+ / 19 + Vite + TypeScript** | Rendimiento máximo, tipado estricto, sin sobrecostes ni cold-starts de servidores intermedios. |
@@ -75,92 +118,20 @@ Cada tarjeta de Trello debe contar con:
 | **Fechas & Horarios** | **date-fns** / **Day.js** | Gestión precisa de calendarios, slots de turnos y zonas horarias. |
 
 ### Principios de Diseño Visual (Branding "Grizzly barber")
-- **Paleta de Colores:** Fondo oscuro profundo (carbón/pizarra `#0f172a` o `#18181b`), detalles en ámbar cálido / oro vintage (`#d97706` o `#b45309`), superficies en gris grafito y textos en blanco hueso.
-- **Enfoque Mobile-First:** El 85%+ de las reservas se realizarán desde teléfonos móviles. La experiencia táctil debe ser fluida, botones accesibles con el pulgar y flujo de reserva en máximo 3 pasos.
+- **Paleta y tipografía:** se toman de las variables de Figma y viven como tokens en `tailwind.config.js` (ver `docs/componentes.md` §0).
+- **Enfoque Mobile-First:** El 85%+ de las reservas se realizarán desde teléfonos móviles. La experiencia táctil debe ser fluida, botones accesibles con el pulgar y flujo de reserva en 4 pasos.
 
 ---
 
-## 4. Estructura de Datos en Firestore (`Collections`)
+## 4. Modelo de Datos en Firestore
 
-Toda consulta o escritura a Firestore debe respetar el siguiente modelo de datos y sus tipos TypeScript asociados:
+El modelo de datos vigente está en **`docs/producto.md` §8** y en los requisitos de cada spec. No se duplica aquí para evitar desincronización.
 
-### Colección: `users`
-Guarda el perfil del usuario autenticado vía Firebase Auth.
-```typescript
-interface UserProfile {
-  id: string;              // UID de Firebase Auth
-  email: string;
-  displayName: string;
-  phone: string;
-  role: 'client' | 'barber' | 'admin';
-  avatarUrl?: string;
-  createdAt: number;       // Timestamp UNIX o Firestore FieldValue
-}
-```
-
-### Colección: `services`
-Catálogo de cortes, arreglo de barba y servicios complementarios.
-```typescript
-interface ServiceItem {
-  id: string;
-  name: string;            // Ej. "Corte Grizzly Tradicional"
-  description: string;
-  durationMinutes: number; // Ej. 30, 45, 60
-  price: number;           // Moneda local
-  category: 'hair' | 'beard' | 'combo' | 'spa';
-  imageUrl?: string;
-  active: boolean;
-}
-```
-
-### Colección: `barbers`
-Perfiles y horarios laborales de los barberos.
-```typescript
-interface BarberProfile {
-  id: string;
-  userId: string;
-  name: string;
-  bio: string;
-  specialties: string[];
-  avatarUrl?: string;
-  schedule: {
-    dayOfWeek: number;     // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
-    startTime: string;     // Formato "09:00"
-    endTime: string;       // Formato "20:00"
-    breakStart?: string;   // Formato "13:00"
-    breakEnd?: string;     // Formato "14:00"
-  }[];
-  active: boolean;
-}
-```
-
-### Colección: `appointments` (Turnos / Citas)
-Registro central de turnos. Debe validarse para impedir solapamientos para el mismo barbero y horario.
-```typescript
-interface Appointment {
-  id: string;
-  clientId: string;
-  clientName: string;
-  clientPhone: string;
-  barberId: string;
-  barberName: string;
-  serviceId: string;
-  serviceName: string;
-  date: string;            // Formato ISO "YYYY-MM-DD"
-  startTime: string;       // "10:30"
-  endTime: string;         // "11:15"
-  status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
-  totalPrice: number;
-  notes?: string;
-  createdAt: number;
-  updatedAt: number;
-}
-```
-
-### Reglas de Seguridad en Firestore (`firestore.rules`)
-- Los clientes solo pueden leer y cancelar sus propias citas (`clientId == request.auth.uid`).
-- La lectura de `services` y `barbers` es pública para que cualquiera pueda ver el catálogo.
-- Solo usuarios con rol `admin` o `barber` pueden modificar precios, servicios o estados de turnos ajenos.
+Reglas que siempre aplican:
+- Los tipos TypeScript en `src/types/` MUST reflejar `docs/producto.md` §8; si se cambia el modelo, se actualizan ambos en el mismo cambio OpenSpec.
+- Los montos, sellos de fidelización, ratings y estados de pago se calculan **en el servidor**; el cliente nunca los escribe.
+- `role`, `memberCode` y `loyalty` de `users` no son escribibles desde el cliente.
+- Las citas guardan una copia del precio y la duración al reservar.
 
 ---
 
@@ -170,6 +141,10 @@ interface Appointment {
 barb/
 ├── .agents/
 │   └── skills/                  # Atajos y habilidades de OpenSpec (/opsx-*)
+├── docs/
+│   ├── producto.md              # Fuente de verdad funcional
+│   └── componentes.md           # Inventario de componentes y tokens
+├── functions/                   # Cloud Functions (pagos, fidelización, expiración)
 ├── openspec/
 │   ├── changes/                 # Cambios activos y archivados
 │   │   └── archive/

@@ -10,6 +10,9 @@ context: |
   Keep OpenSpec structural headings and SHALL/MUST keywords in English.
   All tasks originate from the project's Trello board.
   Components and modules MUST be introduced via OpenSpec changes. Direct un-spec'd creation is prohibited.
+  Functional source of truth: docs/producto.md (scope, rules, data model, decision log). Read it before proposing.
+  Component inventory and tokens: docs/componentes.md. Reuse components before creating new ones.
+  Open questions in docs/producto.md §11 MUST NOT be resolved by assumption; ask the owner.
 
 rules:
   proposal:
